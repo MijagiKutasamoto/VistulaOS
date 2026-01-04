@@ -1,42 +1,16 @@
-name: Publish pacman repo (GitHub Pages)
+name: Publish pacman repo (GitHub Pages) [disabled]
 
 on:
-  push:
-    branches: ["main"]
-    paths:
-      - "repo/**"
-      - ".github/workflows/publish-pacman-repo.yml"
+  workflow_dispatch:
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
-
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
 
 jobs:
-  deploy:
+  notice:
     runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Configure Pages
-        uses: actions/configure-pages@v5
-        with:
-          enablement: true
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
-        with:
-          path: repo
-
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Notice
+        run: |
+          echo "This repo currently serves GitHub Pages via branch/Jekyll, so the Actions-based Pages deploy is disabled."
+          echo "Pacman repo is available under /repo/vistula/os/x86_64/."
