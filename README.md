@@ -1,5 +1,5 @@
 # VistulaOS
-VistulaOS – Arch Linux based distribution with custom Cinnamon environment
+VistulaOS Horizon – Arch Linux based distribution with custom Cinnamon environment
 
 ## Repo pacmana
 
