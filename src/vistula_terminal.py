@@ -5,6 +5,15 @@ import sys
 from dataclasses import dataclass
 from typing import Optional
 
+from i18n import Translator
+
+__version__ = "1.0.0"
+
+# Pozwól sprawdzić wersję bez ładowania GTK/VTE (np. w środowisku bez GI).
+if __name__ == "__main__" and "--version" in sys.argv[1:]:
+    print(__version__)
+    raise SystemExit(0)
+
 try:
     import gi
 
@@ -12,13 +21,20 @@ try:
     if require_version is None:
         raise ImportError("PyGObject (python3-gi) nie jest zainstalowany")
 
+    # Ważne: ustaw wersje *zanim* zaimportujemy cokolwiek z gi.repository,
+    # żeby nie wczytał się przypadkiem Gdk 4.x.
+    gi.require_version("Gdk", "3.0")
+    gi.require_version("Gio", "2.0")
+    gi.require_version("GLib", "2.0")
+    gi.require_version("Pango", "1.0")
     gi.require_version("Gtk", "3.0")
     gi.require_version("Vte", "2.91")
 
     from gi.repository import Gdk, Gio, GLib, Gtk, Pango, Vte  # noqa: E402
 except Exception as exc:  # pragma: no cover
-    print("Błąd: brak zależności do uruchomienia GUI terminala.")
-    print("Zainstaluj: python3-gi gir1.2-gtk-3.0 gir1.2-vte-2.91")
+    tr = Translator.load()
+    print(tr.t("error.missing_deps.title", "Błąd: brak zależności do uruchomienia GUI terminala."))
+    print(tr.t("error.missing_deps.hint", "Zainstaluj: python3-gi gir1.2-gtk-3.0 gir1.2-vte-2.91"))
     print(f"Szczegóły: {exc}")
     raise SystemExit(1)
 
@@ -38,7 +54,8 @@ class PasswordMode:
 class VistulaTerminalWindow(Gtk.ApplicationWindow):
     def __init__(self, app: Gtk.Application, command_argv: Optional[list[str]] = None):
         super().__init__(application=app)
-        self.set_title("Vistula Terminal")
+        self._tr = Translator.load()
+        self.set_title(self._tr.t("app.title", "Vistula Terminal"))
         self.set_default_size(860, 520)
 
         self._password = PasswordMode()
@@ -48,6 +65,11 @@ class VistulaTerminalWindow(Gtk.ApplicationWindow):
 
         self.terminal = Vte.Terminal()
         self.terminal.set_scrollback_lines(10000)
+        self.terminal.add_events(
+            Gdk.EventMask.BUTTON_PRESS_MASK
+            | Gdk.EventMask.BUTTON_RELEASE_MASK
+            | Gdk.EventMask.SCROLL_MASK
+        )
         self._overlay.add(self.terminal)
 
         # Password entry overlay (bottom)
@@ -63,6 +85,7 @@ class VistulaTerminalWindow(Gtk.ApplicationWindow):
         self._password_box.set_margin_bottom(8)
 
         self._password_label = Gtk.Label(label="Hasło:")
+        self._password_label.set_label(self._tr.t("password.label", "Hasło:"))
         self._password_label.set_halign(Gtk.Align.START)
         self._password_label.set_valign(Gtk.Align.CENTER)
         self._password_label.set_margin_end(8)
@@ -80,6 +103,7 @@ class VistulaTerminalWindow(Gtk.ApplicationWindow):
         self._overlay.add_overlay(self._password_revealer)
 
         self._apply_font_from_cinnamon_settings()
+        self._apply_icon()
 
         # Copy/paste shortcuts
         accel = Gtk.AccelGroup()
@@ -91,6 +115,7 @@ class VistulaTerminalWindow(Gtk.ApplicationWindow):
         self.connect("realize", self._on_realize)
         self.terminal.connect("contents-changed", self._on_contents_changed)
         self.terminal.connect("key-press-event", self._on_terminal_key_press)
+        self.terminal.connect("button-press-event", self._on_terminal_button_press)
         self._password_entry.connect("activate", self._on_password_activate)
         self._password_entry.connect("key-press-event", self._on_password_key_press)
 
@@ -140,6 +165,33 @@ class VistulaTerminalWindow(Gtk.ApplicationWindow):
         except Exception:
             return
 
+    def _apply_icon(self) -> None:
+        # Prefer icon theme name; fallback to bundled SVG file.
+        icon_name = "org.vistula.Terminal"
+
+        try:
+            # Ensure our local hicolor icons are discoverable when running uninstalled.
+            root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+            icons_dir = os.path.join(root, "data", "icons")
+            theme = Gtk.IconTheme.get_default()
+            theme.append_search_path(icons_dir)
+        except Exception:
+            pass
+
+        try:
+            self.set_icon_name(icon_name)
+            return
+        except Exception:
+            pass
+
+        try:
+            root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir))
+            icon_file = os.path.join(root, "data", "icons", "hicolor", "scalable", "apps", f"{icon_name}.svg")
+            if os.path.exists(icon_file):
+                self.set_icon_from_file(icon_file)
+        except Exception:
+            pass
+
     def _spawn_child(self, command_argv: Optional[list[str]] = None) -> None:
         cwd = os.environ.get("PWD") or os.path.expanduser("~")
 
@@ -173,7 +225,7 @@ class VistulaTerminalWindow(Gtk.ApplicationWindow):
                 modal=True,
                 message_type=Gtk.MessageType.ERROR,
                 buttons=Gtk.ButtonsType.CLOSE,
-                text="Nie udało się uruchomić powłoki.",
+                text=self._tr.t("error.spawn.title", "Nie udało się uruchomić powłoki."),
             )
             dialog.format_secondary_text(str(exc))
             dialog.run()
@@ -272,10 +324,55 @@ class VistulaTerminalWindow(Gtk.ApplicationWindow):
 
         return False
 
+    def _on_terminal_button_press(self, _terminal: Vte.Terminal, event: Gdk.EventButton):
+        # 3 = prawy przycisk: menu kopiuj/wklej
+        if event.button == 3:
+            self._show_context_menu(event)
+            return True
+
+        # 2 = środkowy przycisk: wklej PRIMARY (klasyczne X11/Wayland)
+        if event.button == 2:
+            try:
+                self.terminal.paste_primary()
+            except Exception:
+                self.terminal.paste_clipboard()
+            return True
+
+        return False
+
+    def _show_context_menu(self, event: Gdk.EventButton) -> None:
+        menu = Gtk.Menu()
+
+        item_copy = Gtk.MenuItem(label=self._tr.t("menu.copy", "Kopiuj"))
+        item_paste = Gtk.MenuItem(label=self._tr.t("menu.paste", "Wklej"))
+
+        item_copy.connect("activate", lambda *_a: self.terminal.copy_clipboard())
+        item_paste.connect("activate", lambda *_a: self.terminal.paste_clipboard())
+
+        # Sensowne stany (kopiuj tylko gdy jest zaznaczenie)
+        try:
+            item_copy.set_sensitive(bool(self.terminal.get_has_selection()))
+        except Exception:
+            pass
+
+        menu.append(item_copy)
+        menu.append(item_paste)
+        menu.show_all()
+
+        # GTK3
+        try:
+            menu.popup_at_pointer(event)
+        except Exception:
+            menu.popup(None, None, None, None, event.button, event.time)
+
 
 class VistulaTerminalApp(Gtk.Application):
     def __init__(self):
         super().__init__(application_id="org.vistula.Terminal", flags=Gio.ApplicationFlags.HANDLES_COMMAND_LINE)
+        try:
+            self.set_default_icon_name("org.vistula.Terminal")
+        except Exception:
+            pass
 
     def do_activate(self):
         win = self.props.active_window
@@ -286,6 +383,11 @@ class VistulaTerminalApp(Gtk.Application):
 
     def do_command_line(self, command_line: Gio.ApplicationCommandLine):
         argv = command_line.get_arguments()[1:]
+
+        if "--version" in argv:
+            command_line.print(f"{__version__}\n")
+            return 0
+
         win = VistulaTerminalWindow(self, command_argv=argv if argv else None)
         win.show_all()
         win.present()

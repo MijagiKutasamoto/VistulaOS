@@ -1,0 +1,9 @@
+{
+  "app.title": "Vistula Terminal",
+  "password.label": "Password:",
+  "menu.copy": "Copy",
+  "menu.paste": "Paste",
+  "error.missing_deps.title": "Error: missing GUI dependencies.",
+  "error.missing_deps.hint": "Install: python-gobject gtk3 vte3",
+  "error.spawn.title": "Could not start the shell."
+}

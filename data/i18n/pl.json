@@ -1,0 +1,9 @@
+{
+  "app.title": "Vistula Terminal",
+  "password.label": "Hasło:",
+  "menu.copy": "Kopiuj",
+  "menu.paste": "Wklej",
+  "error.missing_deps.title": "Błąd: brak zależności do uruchomienia GUI terminala.",
+  "error.missing_deps.hint": "Zainstaluj: python-gobject gtk3 vte3",
+  "error.spawn.title": "Nie udało się uruchomić powłoki."
+}
