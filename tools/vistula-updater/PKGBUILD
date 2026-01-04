@@ -2,11 +2,14 @@
 
 pkgname=vistula-updater
 pkgver=0.1.1
-pkgrel=1
+pkgrel=2
 pkgdesc="GUI aktualizator systemu (pacman) i frontend Flatpak dla VistulaOS (Cinnamon)"
 arch=('any')
 url="https://github.com/MijagiKutasamoto/VistulaOS"
 license=('custom')
+provides=('vistulla-updater')
+conflicts=('vistulla-updater')
+replaces=('vistulla-updater')
 depends=(
   'python'
   'gtk3'
