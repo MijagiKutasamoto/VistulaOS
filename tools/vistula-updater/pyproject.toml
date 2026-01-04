@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "vistula-updater"
-version = "0.1.0"
+version = "0.1.1"
 description = "Prosty GUI aktualizator systemu (pacman) i frontend Flatpak dla VistulaOS (Cinnamon)."
 readme = "README.md"
 requires-python = ">=3.10"

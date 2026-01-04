@@ -1,11 +1,11 @@
 # Maintainer: Patryk <patryk@local>
 
 pkgname=vistula-updater
-pkgver=0.1.0
+pkgver=0.1.1
 pkgrel=1
 pkgdesc="GUI aktualizator systemu (pacman) i frontend Flatpak dla VistulaOS (Cinnamon)"
 arch=('any')
-url="https://example.invalid/vistula-updater"
+url="https://github.com/MijagiKutasamoto/VistulaOS"
 license=('custom')
 depends=(
   'python'
@@ -31,12 +31,22 @@ sha256sums=('SKIP')
 
 build() {
   cd "${srcdir}/${pkgname}-${pkgver}"
+  rm -rf dist
   python -m build --wheel --no-isolation
 }
 
 package() {
   cd "${srcdir}/${pkgname}-${pkgver}"
-  python -m installer --destdir="${pkgdir}" dist/*.whl
+
+  shopt -s nullglob
+  wheels=(dist/*.whl)
+  shopt -u nullglob
+  if (( ${#wheels[@]} != 1 )); then
+    echo "Oczekiwano 1 pliku *.whl w dist/, znaleziono: ${#wheels[@]}" >&2
+    ls -la dist/ >&2 || true
+    return 1
+  fi
+  python -m installer --destdir="${pkgdir}" "${wheels[0]}"
 
   install -Dm644 packaging/vistula-updater.desktop "${pkgdir}/usr/share/applications/vistula-updater.desktop"
   install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"

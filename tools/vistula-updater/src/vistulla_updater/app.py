@@ -5,6 +5,7 @@ from dataclasses import dataclass
 import re
 import sys
 import importlib.util
+import importlib.metadata
 from typing import List, Optional, Tuple
 
 import gi
@@ -103,6 +104,11 @@ class VistullaUpdaterWindow(Gtk.Window):
         self.headerbar.set_title(t("app.title"))
         self.set_titlebar(self.headerbar)
 
+        self.btn_about = Gtk.Button(label=t("app.about"))
+        self.btn_about.set_tooltip_text(t("about.title"))
+        self.btn_about.connect("clicked", self.on_about_clicked)
+        self.headerbar.pack_end(self.btn_about)
+
         self._apply_cinnamon_theme()
 
         outer = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
@@ -162,6 +168,10 @@ class VistullaUpdaterWindow(Gtk.Window):
 
         if hasattr(self, "headerbar") and self.headerbar is not None:
             self.headerbar.set_title(t("app.title"))
+
+        if hasattr(self, "btn_about") and self.btn_about is not None:
+            self.btn_about.set_label(t("app.about"))
+            self.btn_about.set_tooltip_text(t("about.title"))
 
         self.tab_label_system.set_text(t("tab.system"))
         self.tab_label_flatpak.set_text(t("tab.flatpak"))
@@ -359,40 +369,40 @@ class VistullaUpdaterWindow(Gtk.Window):
     def _build_flatpak_store_tab(self) -> Gtk.Widget:
         root = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
 
-        top_frame = Gtk.Frame()
-        top_frame.set_shadow_type(Gtk.ShadowType.IN)
-        top = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        top.set_border_width(8)
-        top_frame.add(top)
-        root.pack_start(top_frame, False, False, 0)
+        controls_frame = Gtk.Frame()
+        controls_frame.set_shadow_type(Gtk.ShadowType.IN)
+        controls = Gtk.Grid()
+        controls.set_border_width(8)
+        controls.set_row_spacing(8)
+        controls.set_column_spacing(10)
+        controls_frame.add(controls)
+        root.pack_start(controls_frame, False, False, 0)
 
         self.lbl_fp_store_remote = Gtk.Label(label=t("fp.store.remote"))
         self.lbl_fp_store_remote.set_xalign(0)
-        top.pack_start(self.lbl_fp_store_remote, False, False, 0)
+        controls.attach(self.lbl_fp_store_remote, 0, 0, 1, 1)
 
         self.combo_fp_store_remote = Gtk.ComboBoxText()
         self.combo_fp_store_remote.connect("changed", self.on_fp_store_remote_changed)
-        top.pack_start(self.combo_fp_store_remote, False, False, 0)
+        controls.attach(self.combo_fp_store_remote, 1, 0, 1, 1)
 
         self.btn_fp_store_refresh = Gtk.Button(label=t("fp.store.refresh"))
         self.btn_fp_store_refresh.connect("clicked", self.on_fp_store_refresh)
-        top.pack_start(self.btn_fp_store_refresh, False, False, 0)
+        controls.attach(self.btn_fp_store_refresh, 2, 0, 1, 1)
 
-        row_frame = Gtk.Frame()
-        row_frame.set_shadow_type(Gtk.ShadowType.IN)
-        row = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
-        row.set_border_width(8)
-        row_frame.add(row)
-        root.pack_start(row_frame, False, False, 0)
+        spacer = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        spacer.set_hexpand(True)
+        controls.attach(spacer, 3, 0, 1, 1)
 
         self.flatpak_query = Gtk.Entry()
         self.flatpak_query.set_placeholder_text(t("fp.store.filter"))
         self.flatpak_query.connect("changed", self.on_fp_store_filter_changed)
-        row.pack_start(self.flatpak_query, True, True, 0)
+        self.flatpak_query.set_hexpand(True)
+        controls.attach(self.flatpak_query, 0, 1, 3, 1)
 
         self.btn_fp_search = Gtk.Button(label=t("fp.search"))
         self.btn_fp_search.connect("clicked", self.on_fp_store_apply_filters)
-        row.pack_start(self.btn_fp_search, False, False, 0)
+        controls.attach(self.btn_fp_search, 3, 1, 1, 1)
 
         # Actions are available in the details panel; hide duplicates to reduce clutter.
         self.btn_fp_install = Gtk.Button(label=t("fp.install"))
@@ -407,10 +417,11 @@ class VistullaUpdaterWindow(Gtk.Window):
 
         self.btn_fp_update = Gtk.Button(label=t("fp.update_all"))
         self.btn_fp_update.connect("clicked", self.on_fp_update_all)
-        row.pack_start(self.btn_fp_update, False, False, 0)
+        controls.attach(self.btn_fp_update, 4, 1, 1, 1)
 
         pane = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
         pane.set_wide_handle(True)
+        pane.set_position(220)
         root.pack_start(pane, True, True, 0)
 
         # Categories
@@ -443,6 +454,7 @@ class VistullaUpdaterWindow(Gtk.Window):
         right = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
 
         app_list_frame = Gtk.Frame()
+        app_list_frame.set_label(t("fp.store.apps"))
         app_list_frame.set_shadow_type(Gtk.ShadowType.IN)
         app_list_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
         app_list_box.set_border_width(8)
@@ -463,7 +475,6 @@ class VistullaUpdaterWindow(Gtk.Window):
         fp_scroller.add(self.fp_tree)
         app_list_box.pack_start(fp_scroller, True, True, 0)
         app_list_frame.add(app_list_box)
-        right.pack_start(app_list_frame, True, True, 0)
 
         # Details panel
         self.fp_details_frame = Gtk.Frame(label=t("fp.details.title"))
@@ -478,8 +489,16 @@ class VistullaUpdaterWindow(Gtk.Window):
         details_box.pack_start(grid, False, False, 0)
 
         def mk_label(txt: str) -> Gtk.Label:
-            lbl = Gtk.Label(label=txt)
+            lbl = Gtk.Label()
+            lbl.set_markup(f"<b>{GLib.markup_escape_text(txt)}</b>")
             lbl.set_xalign(0)
+            return lbl
+
+        def mk_value() -> Gtk.Label:
+            lbl = Gtk.Label(label="")
+            lbl.set_xalign(0)
+            lbl.set_selectable(True)
+            lbl.set_line_wrap(True)
             return lbl
 
         self.fp_details_lbl_appid = mk_label(t("fp.details.appid"))
@@ -492,14 +511,14 @@ class VistullaUpdaterWindow(Gtk.Window):
         self.fp_details_lbl_size = mk_label(t("fp.details.size"))
         self.fp_details_lbl_description = mk_label(t("fp.details.description"))
 
-        self.fp_details_val_appid = mk_label("")
-        self.fp_details_val_name = mk_label("")
-        self.fp_details_val_origin = mk_label("")
-        self.fp_details_val_version = mk_label("")
-        self.fp_details_val_branch = mk_label("")
-        self.fp_details_val_license = mk_label("")
-        self.fp_details_val_author = mk_label("")
-        self.fp_details_val_size = mk_label("")
+        self.fp_details_val_appid = mk_value()
+        self.fp_details_val_name = mk_value()
+        self.fp_details_val_origin = mk_value()
+        self.fp_details_val_version = mk_value()
+        self.fp_details_val_branch = mk_value()
+        self.fp_details_val_license = mk_value()
+        self.fp_details_val_author = mk_value()
+        self.fp_details_val_size = mk_value()
 
         grid.attach(self.fp_details_lbl_appid, 0, 0, 1, 1)
         grid.attach(self.fp_details_val_appid, 1, 0, 1, 1)
@@ -539,7 +558,12 @@ class VistullaUpdaterWindow(Gtk.Window):
         self.btn_fp_details_uninstall.connect("clicked", self.on_fp_uninstall)
         btn_row.pack_start(self.btn_fp_details_uninstall, False, False, 0)
 
-        right.pack_start(self.fp_details_frame, False, False, 0)
+        right_pane = Gtk.Paned(orientation=Gtk.Orientation.VERTICAL)
+        right_pane.set_wide_handle(True)
+        right_pane.set_position(320)
+        right_pane.add1(app_list_frame)
+        right_pane.add2(self.fp_details_frame)
+        right.pack_start(right_pane, True, True, 0)
 
         pane.add2(right)
 
@@ -548,6 +572,7 @@ class VistullaUpdaterWindow(Gtk.Window):
         fp_log_view.set_editable(False)
         fp_log_view.set_monospace(True)
         fp_log_frame = Gtk.Frame()
+        fp_log_frame.set_label(t("fp.store.log"))
         fp_log_frame.set_shadow_type(Gtk.ShadowType.IN)
         fp_log_scroller = Gtk.ScrolledWindow()
         fp_log_scroller.set_vexpand(False)
@@ -565,6 +590,38 @@ class VistullaUpdaterWindow(Gtk.Window):
         self._populate_categories()
 
         return root
+
+    def _get_app_version(self) -> str:
+        for dist_name in ("vistula-updater", "vistulla-updater"):
+            try:
+                return importlib.metadata.version(dist_name)
+            except Exception:
+                pass
+        try:
+            from . import __version__
+
+            return __version__
+        except Exception:
+            return "dev"
+
+    def _open_uri(self, uri: str) -> None:
+        try:
+            Gio.AppInfo.launch_default_for_uri(uri, None)
+        except Exception:
+            pass
+
+    def on_about_clicked(self, _btn: Gtk.Button) -> None:
+        repo_url = "https://github.com/MijagiKutasamoto/VistulaOS"
+        dlg = Gtk.AboutDialog(transient_for=self, modal=True)
+        dlg.set_program_name(t("app.title"))
+        dlg.set_version(self._get_app_version())
+        dlg.set_comments(t("about.description"))
+        dlg.set_authors(["MijagiKutasamoto (Patryk)"])
+        dlg.set_website(repo_url)
+        dlg.set_website_label(t("about.repo"))
+        dlg.connect("activate-link", lambda _d, link: (self._open_uri(link), True)[1])
+        dlg.run()
+        dlg.destroy()
 
     def on_main_switch_page(self, _nb: Gtk.Notebook, _page: Gtk.Widget, page_num: int) -> None:
         # 0=System, 1=Flatpak, 2=Settings
