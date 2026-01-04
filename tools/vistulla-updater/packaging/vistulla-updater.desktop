@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Application
+Name=Vistulla Updater
+Comment=Aktualizacje systemu (pacman) i Flatpak
+Exec=vistulla-updater
+Terminal=false
+Categories=System;Settings;
+# Użyj ikony z motywu systemowego (nie wymagamy własnego pliku ikony)
+Icon=system-software-update
+StartupNotify=true

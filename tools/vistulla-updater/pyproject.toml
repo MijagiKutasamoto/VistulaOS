@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=61", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vistulla-updater"
+version = "0.1.0"
+description = "Prosty GUI aktualizator systemu (pacman) i frontend Flatpak dla VistulaOS (Cinnamon)."
+readme = "README.md"
+requires-python = ">=3.10"
+
+# Zależności runtime są dostarczane przez paczki systemowe (pacman),
+# więc nie deklarujemy ich jako pipowe dependencies.
+
+[project.scripts]
+vistulla-updater = "vistulla_updater.main:main"
+
+[tool.setuptools]
+package-dir = {"" = "src"}
+
+[tool.setuptools.packages.find]
+where = ["src"]
