@@ -1,0 +1,23 @@
+__pycache__/
+*.pyc
+.venv/
+.env
+.DS_Store
+.vscode/
+
+# Python packaging/build outputs
+build/
+dist/
+*.egg-info/
+*.whl
+
+# Arch packaging outputs
+pkg/
+src/vistulla-updater-*/
+*.pkg.tar.*
+*.tar.gz
+*.tar.zst
+*.tar.xz
+*.tar.bz2
+*.tar
+*.zst

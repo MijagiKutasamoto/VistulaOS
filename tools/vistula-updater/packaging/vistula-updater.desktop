@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Vistula Updater
+Comment=Aktualizacje systemu (pacman) i Flatpak
+Exec=vistula-updater
+Terminal=false
+Categories=System;Settings;
+Icon=system-software-update
+StartupNotify=true
