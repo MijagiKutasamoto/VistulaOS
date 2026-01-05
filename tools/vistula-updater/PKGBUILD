@@ -1,0 +1,60 @@
+# Maintainer: Patryk <patryk@local>
+
+pkgname=vistula-updater
+pkgver=0.1.2
+pkgrel=1
+pkgdesc="GUI aktualizator systemu (pacman) i frontend Flatpak dla VistulaOS (Cinnamon)"
+arch=('any')
+url="https://github.com/MijagiKutasamoto/VistulaOS"
+license=('custom')
+provides=('vistulla-updater')
+conflicts=('vistulla-updater')
+replaces=('vistulla-updater')
+depends=(
+  'python'
+  'gtk3'
+  'python-gobject'
+  'gobject-introspection'
+  'flatpak'
+  'pacman-contrib'
+  'libnotify'
+  'polkit'
+)
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+
+# Budowanie z tarballa źródeł (zalecane do repo pacmana).
+# Utwórz go np. tak:
+#   git archive --format=tar --prefix=${pkgname}-${pkgver}/ v${pkgver} | gzip -9 > ${pkgname}-${pkgver}.tar.gz
+source=("${pkgname}-${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  rm -rf dist
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  shopt -s nullglob
+  wheels=(dist/*.whl)
+  shopt -u nullglob
+  if (( ${#wheels[@]} != 1 )); then
+    echo "Oczekiwano 1 pliku *.whl w dist/, znaleziono: ${#wheels[@]}" >&2
+    ls -la dist/ >&2 || true
+    return 1
+  fi
+  python -m installer --destdir="${pkgdir}" dist/*.whl
+
+  # Autostart notifier (Cinnamon/GNOME etc.)
+  install -Dm644 packaging/vistula-updater-notifier.desktop \
+    "${pkgdir}/etc/xdg/autostart/vistula-updater-notifier.desktop"
+  install -Dm644 packaging/vistula-updater.desktop "${pkgdir}/usr/share/applications/vistula-updater.desktop"
+  install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

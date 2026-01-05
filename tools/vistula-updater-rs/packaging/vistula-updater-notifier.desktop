@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=VistulaOS Update Notifier
+Comment=Check for system and Flatpak updates
+Exec=vistula-updater-notifier
+Icon=system-software-update
+Categories=System;
+Hidden=true
+X-GNOME-Autostart-enabled=true

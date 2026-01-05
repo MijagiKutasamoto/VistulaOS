@@ -1,0 +1,9 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=VistulaOS Updater
+Comment=System updater (pacman) and Flatpak store for VistulaOS
+Exec=vistula-updater
+Icon=system-software-update
+Categories=System;Utility;
+Keywords=update;system;flatpak;pacman;
