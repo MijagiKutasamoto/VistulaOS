@@ -1,0 +1,58 @@
+# Maintainer: Patryk <patryk@local>
+
+pkgname=vistula-installer
+pkgver=1.0.0
+pkgrel=1
+pkgdesc="VistulaOS graphical installer (GTK3 / PyGObject)"
+arch=('any')
+url="https://github.com/MijagiKutasamoto/VistulaOS"
+license=('custom')
+depends=(
+  'python'
+  'gtk3'
+  'python-gobject'
+  'gobject-introspection'
+)
+optdepends=(
+  'flatpak: optional Flatpak search/install in target'
+  'parted: disk partitioning'
+  'util-linux: lsblk and core tools'
+  'dosfstools: mkfs.vfat for EFI partitions'
+  'e2fsprogs: mkfs.ext4 for root partitions'
+  'rsync: copying system files'
+  'grub: bootloader installation'
+)
+makedepends=(
+  'python-build'
+  'python-installer'
+  'python-setuptools'
+  'python-wheel'
+)
+
+# Budowanie z tarballa źródeł (zalecane do repo pacmana).
+# Utwórz go np. tak (z katalogu repo):
+#   tar -C vistula-installer -czf ${pkgname}-${pkgver}.tar.gz --transform "s,^,${pkgname}-${pkgver}/," .
+source=("${pkgname}-${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+  rm -rf dist
+  python -m build --wheel --no-isolation
+}
+
+package() {
+  cd "${srcdir}/${pkgname}-${pkgver}"
+
+  shopt -s nullglob
+  wheels=(dist/*.whl)
+  shopt -u nullglob
+  if (( ${#wheels[@]} != 1 )); then
+    echo "Oczekiwano 1 pliku *.whl w dist/, znaleziono: ${#wheels[@]}" >&2
+    ls -la dist/ >&2 || true
+    return 1
+  fi
+  python -m installer --destdir="${pkgdir}" "${wheels[0]}"
+
+  install -Dm644 README.md "${pkgdir}/usr/share/doc/${pkgname}/README.md"
+}

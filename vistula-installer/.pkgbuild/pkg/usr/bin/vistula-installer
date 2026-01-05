@@ -1,0 +1,10 @@
+#!/usr/bin/env python3
+import os
+import runpy
+import sys
+
+os.environ.setdefault("VISTULA_INSTALLER_ASSETS", "/usr/lib/vistula-installer")
+sys.path.insert(0, "/usr/lib/vistula-installer")
+
+# Forward argv to the module's argparse.
+runpy.run_module("vistula_installer", run_name="__main__")
