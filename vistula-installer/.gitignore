@@ -1,0 +1,26 @@
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.swp
+
+.venv/
+venv/
+
+build/
+dist/
+*.egg-info/
+
+.cache/
+.pytest_cache/
+.mypy_cache/
+
+# PyInstaller
+*.spec
+
+# Logs
+*.log
+
+# Local config/state
+.config/
+.local/

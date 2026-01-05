@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "vistula-installer"
+version = "1.0.0"
+description = "VistulaOS graphical installer"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "Proprietary" }
+authors = [{ name = "VistulaOS" }]
+
+# PyGObject/GTK are typically system packages; keep pip deps empty.
+dependencies = []
+
+[project.scripts]
+vistula-installer = "vistula_installer.main:main"
+
+[tool.setuptools]
+include-package-data = true
+
+[tool.setuptools.package-data]
+"vistula_installer" = ["py.typed"]
+
+[tool.setuptools.data-files]
+# Install translation assets alongside the package for non-PyInstaller installs.
+"share/vistula-installer/assets/i18n" = ["assets/i18n/*.json"]
