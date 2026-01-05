@@ -95,7 +95,7 @@ Users can test the repository with:
 ```bash
 # Add the repository to /etc/pacman.conf
 [vistula]
-Server = https://github.com/MijagiKutasamoto/VistulaOS/raw/main/repo/vistula/os/$arch
+Server = https://mijagikutasamoto.github.io/VistulaOS/repo/vistula/os/$arch
 
 # Install the package
 sudo pacman -Sy

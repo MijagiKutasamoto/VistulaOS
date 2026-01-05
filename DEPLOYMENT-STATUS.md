@@ -127,7 +127,7 @@ Users can install with:
 ```bash
 # Add to /etc/pacman.conf:
 [vistula]
-Server = https://raw.githubusercontent.com/MijagiKutasamoto/VistulaOS/main/repo/vistula/os/$arch
+Server = https://mijagikutasamoto.github.io/VistulaOS/repo/vistula/os/$arch
 
 # Install
 sudo pacman -Sy
