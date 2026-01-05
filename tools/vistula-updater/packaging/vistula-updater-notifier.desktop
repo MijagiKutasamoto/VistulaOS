@@ -1,8 +1,0 @@
-[Desktop Entry]
-Type=Application
-Name=Vistula Updater Notifier
-Comment=Checks for system updates and shows notifications
-Exec=vistula-updater-notifier
-Terminal=false
-X-GNOME-Autostart-enabled=true
-OnlyShowIn=X-Cinnamon;GNOME;MATE;XFCE;KDE;
